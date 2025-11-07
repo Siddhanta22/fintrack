@@ -5,6 +5,7 @@ This module sets up the FastAPI app with all routes, middleware, and configurati
 We use dependency injection for database sessions and authentication.
 """
 
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -36,7 +37,6 @@ app = FastAPI(
 # CORS middleware: allows Next.js frontend to communicate with this backend
 # In development, allow all localhost origins for flexibility
 # In production, you'd restrict origins to your specific domain
-import os
 is_dev = os.getenv("ENVIRONMENT", "development") == "development"
 
 # Allow all localhost ports in development, specific origins in production
