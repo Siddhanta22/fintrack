@@ -83,6 +83,13 @@ async def upload_transactions(
             detail="Account not found"
         )
     
+    # Validate file
+    if not file.filename or not file.filename.lower().endswith('.csv'):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please upload a CSV file (.csv extension required)"
+        )
+    
     # Read file content
     try:
         content = await file.read()
@@ -92,13 +99,45 @@ async def upload_transactions(
             detail=f"Error reading file: {str(e)}"
         )
     
+    # Validate file is not empty
+    if not content or len(content) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The uploaded file is empty. Please upload a CSV file with transaction data."
+        )
+    
+    # Validate file size (max 10MB)
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File size exceeds 10MB limit. Please upload a smaller file."
+        )
+    
     # Parse CSV
     try:
         parsed_transactions = parse_csv_file(content, account_id)
+    except ValueError as e:
+        # ValueError from CSV parser (missing columns, date format, etc.)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except UnicodeDecodeError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File encoding error: Please ensure your CSV file is saved as UTF-8 encoding. Error: {str(e)}"
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Error parsing CSV: {str(e)}"
+            detail=f"Error parsing CSV file: {str(e)}. Please check that your CSV file has the required columns: Date, Description, Amount"
+        )
+    
+    # Validate parsed transactions
+    if not parsed_transactions or len(parsed_transactions) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No valid transactions found in the CSV file. Please check the file format and ensure it contains Date, Description, and Amount columns."
         )
     
     # Import transactions

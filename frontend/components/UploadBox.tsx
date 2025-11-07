@@ -43,8 +43,22 @@ export function UploadBox({ onUpload, accountId, disabled }: UploadBoxProps) {
 
       try {
         await onUpload(file);
+        // Clear any previous errors on success
+        setError(null);
       } catch (err: any) {
-        setError(err.response?.data?.detail || 'Upload failed');
+        // Extract error message from various possible error formats
+        let errorMessage = 'Upload failed';
+        if (err?.response?.data?.detail) {
+          errorMessage = err.response.data.detail;
+        } else if (err?.response?.data?.message) {
+          errorMessage = err.response.data.message;
+        } else if (err?.message) {
+          errorMessage = err.message;
+        } else if (typeof err === 'string') {
+          errorMessage = err;
+        }
+        setError(errorMessage);
+        console.error('Upload error:', err);
       } finally {
         setUploading(false);
       }
@@ -52,13 +66,33 @@ export function UploadBox({ onUpload, accountId, disabled }: UploadBoxProps) {
     [onUpload]
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, fileRejections } = useDropzone({
     onDrop,
     accept: {
       'text/csv': ['.csv'],
+      'application/vnd.ms-excel': ['.csv'], // Excel CSV
+      'text/plain': ['.csv'], // Some systems save CSV as plain text
     },
     disabled: disabled || uploading,
     multiple: false,
+    // Don't strictly validate MIME type since different systems use different MIME types for CSV
+    validator: (file) => {
+      if (!file.name.toLowerCase().endsWith('.csv')) {
+        return {
+          code: 'invalid-file-type',
+          message: 'Please upload a CSV file (.csv extension required)',
+        };
+      }
+      return null;
+    },
+    onDropRejected: (rejectedFiles) => {
+      if (rejectedFiles.length > 0) {
+        const rejection = rejectedFiles[0];
+        if (rejection.errors.length > 0) {
+          setError(rejection.errors[0].message || 'File rejected. Please upload a CSV file.');
+        }
+      }
+    },
   });
 
   return (
@@ -117,9 +151,21 @@ export function UploadBox({ onUpload, accountId, disabled }: UploadBoxProps) {
         )}
       </div>
       {error && (
-        <div className="mt-4 p-4 bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-2 animate-fade-in">
-          <span className="text-xl">⚠️</span>
-          <span className="text-sm font-medium">{error}</span>
+        <div className="mt-4 p-4 bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-700 rounded-xl animate-fade-in">
+          <div className="flex items-start gap-3">
+            <span className="text-xl flex-shrink-0">⚠️</span>
+            <div className="flex-1">
+              <p className="text-sm font-semibold mb-1">Upload Failed</p>
+              <p className="text-sm">{error}</p>
+            </div>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-500 hover:text-red-700 flex-shrink-0"
+              aria-label="Dismiss error"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
     </div>

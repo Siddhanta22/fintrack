@@ -58,11 +58,33 @@ def parse_csv_file(file_content: bytes, account_id: int) -> List[Dict]:
             ...
         ]
     """
-    # Convert bytes to string
-    content = file_content.decode('utf-8')
+    # Convert bytes to string (try multiple encodings)
+    content = None
+    encodings = ['utf-8', 'utf-8-sig', 'latin-1', 'cp1252', 'iso-8859-1']
+    
+    for encoding in encodings:
+        try:
+            content = file_content.decode(encoding)
+            break
+        except UnicodeDecodeError:
+            continue
+    
+    if content is None:
+        raise ValueError(
+            "Unable to decode file. Please ensure your CSV file is saved with UTF-8 encoding."
+        )
     
     # Use pandas for robust CSV parsing (handles encoding, quotes, etc.)
-    df = pd.read_csv(io.StringIO(content))
+    try:
+        df = pd.read_csv(io.StringIO(content))
+    except pd.errors.EmptyDataError:
+        raise ValueError("CSV file is empty. Please upload a file with transaction data.")
+    except pd.errors.ParserError as e:
+        raise ValueError(f"Error parsing CSV file: {str(e)}. Please check that your file is a valid CSV.")
+    
+    # Check if DataFrame is empty
+    if df.empty:
+        raise ValueError("CSV file contains no data rows. Please ensure your file has transaction data.")
     
     # Normalize column names (lowercase, strip whitespace)
     df.columns = df.columns.str.lower().str.strip()
@@ -90,31 +112,68 @@ def parse_csv_file(file_content: bytes, account_id: int) -> List[Dict]:
             amount_col = col
     
     # Validate required columns exist
-    if not date_col or not desc_col or not amount_col:
+    if not date_col:
+        available_cols = ', '.join(list(df.columns))
         raise ValueError(
-            f"CSV must contain date, description, and amount columns. "
-            f"Found columns: {list(df.columns)}"
+            f"CSV file is missing a 'Date' column. "
+            f"Please ensure your CSV has a column named 'Date' (or 'Transaction Date', 'Posted Date'). "
+            f"Found columns: {available_cols}"
+        )
+    
+    if not desc_col:
+        available_cols = ', '.join(list(df.columns))
+        raise ValueError(
+            f"CSV file is missing a 'Description' column. "
+            f"Please ensure your CSV has a column named 'Description' (or 'Memo', 'Details', 'Transaction', 'Payee', 'Merchant'). "
+            f"Found columns: {available_cols}"
+        )
+    
+    if not amount_col:
+        available_cols = ', '.join(list(df.columns))
+        raise ValueError(
+            f"CSV file is missing an 'Amount' column. "
+            f"Please ensure your CSV has a column named 'Amount' (or 'Transaction Amount', 'Debit', 'Credit'). "
+            f"Found columns: {available_cols}"
         )
     
     transactions = []
     
     # Parse each row
-    for _, row in df.iterrows():
+    row_errors = []
+    row_num = 1  # Start at 1 (header is row 1, first data row is row 2)
+    for idx, row in df.iterrows():
+        row_num += 1  # Increment to current row number (row 2, 3, 4, etc.)
         try:
+            # Skip empty rows
+            if row.isna().all():
+                continue
+            
             # Parse date (try multiple formats)
             date_str = str(row[date_col]).strip()
+            if date_str == 'nan' or not date_str:
+                row_errors.append(f"Row {row_num}: Missing date value")
+                continue
             date = parse_date(date_str)
             
             # Get description
             description = str(row[desc_col]).strip()
-            if not description:
+            if not description or description == 'nan':
+                row_errors.append(f"Row {row_num}: Missing description value")
                 continue  # Skip rows with empty descriptions
             
             # Parse amount
             amount_str = str(row[amount_col]).strip()
+            if amount_str == 'nan' or not amount_str:
+                row_errors.append(f"Row {row_num}: Missing amount value")
+                continue
+            
             # Remove currency symbols and commas
             amount_str = amount_str.replace('$', '').replace(',', '').strip()
-            amount = Decimal(amount_str)
+            try:
+                amount = Decimal(amount_str)
+            except (ValueError, Exception) as e:
+                row_errors.append(f"Row {row_num}: Invalid amount '{amount_str}' - {str(e)}")
+                continue
             
             # Determine transaction type
             # Negative amount = expense (debit), positive = income (credit)
@@ -128,10 +187,27 @@ def parse_csv_file(file_content: bytes, account_id: int) -> List[Dict]:
                 "transaction_type": transaction_type
             })
             
-        except Exception as e:
-            # Log error but continue processing other rows
-            print(f"Error parsing row: {e}")
+        except ValueError as e:
+            # Date parsing errors
+            row_errors.append(f"Row {row_num}: {str(e)}")
             continue
+        except Exception as e:
+            # Other errors
+            row_errors.append(f"Row {row_num}: Error parsing row - {str(e)}")
+            continue
+    
+    # If no valid transactions were parsed, raise an error with details
+    if len(transactions) == 0:
+        error_msg = "No valid transactions could be parsed from the CSV file."
+        if row_errors:
+            error_msg += f" Errors: {'; '.join(row_errors[:5])}"  # Show first 5 errors
+            if len(row_errors) > 5:
+                error_msg += f" (and {len(row_errors) - 5} more errors)"
+        raise ValueError(error_msg)
+    
+    # Log row errors if any (but don't fail if we have at least some valid transactions)
+    if row_errors:
+        print(f"Warning: {len(row_errors)} rows had parsing errors: {row_errors[:10]}")
     
     return transactions
 
