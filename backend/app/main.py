@@ -37,7 +37,15 @@ app = FastAPI(
 # In production, you'd restrict origins to your specific domain
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Next.js default port
+    allow_origins=[
+        "http://localhost:3000",  # Next.js default port
+        "http://localhost:3001",  # Next.js alternative port
+        "http://localhost:3002",
+        "http://localhost:3003",
+        "http://localhost:3004",
+        "http://localhost:3005",
+        "http://localhost:3006",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
