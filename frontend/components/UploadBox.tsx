@@ -66,45 +66,60 @@ export function UploadBox({ onUpload, accountId, disabled }: UploadBoxProps) {
       <div
         {...getRootProps()}
         className={`
-          border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
-          transition-colors
-          ${isDragActive ? 'border-primary-500 bg-primary-50' : 'border-gray-300'}
-          ${disabled || uploading ? 'opacity-50 cursor-not-allowed' : 'hover:border-primary-400'}
+          border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer
+          transition-all duration-300
+          ${isDragActive 
+            ? 'border-primary-500 bg-gradient-to-br from-primary-50 to-blue-50 scale-[1.02] shadow-lg' 
+            : 'border-gray-300 bg-gray-50/50 hover:border-primary-400 hover:bg-primary-50/30'
+          }
+          ${disabled || uploading ? 'opacity-50 cursor-not-allowed' : ''}
         `}
       >
         <input {...getInputProps()} />
         {uploading ? (
-          <div className="space-y-2">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
-            <p className="text-sm text-gray-600">Uploading...</p>
+          <div className="space-y-4">
+            <div className="flex justify-center">
+              <div className="relative">
+                <div className="w-16 h-16 border-4 border-primary-200 rounded-full"></div>
+                <div className="w-16 h-16 border-4 border-primary-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+              </div>
+            </div>
+            <p className="text-base font-medium text-gray-700">Uploading your file...</p>
+            <p className="text-sm text-gray-500">Please wait while we process your transactions</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            <svg
-              className="mx-auto h-12 w-12 text-gray-400"
-              stroke="currentColor"
-              fill="none"
-              viewBox="0 0 48 48"
-            >
-              <path
-                d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <p className="text-sm text-gray-600">
-              {isDragActive
-                ? 'Drop the CSV file here'
-                : 'Drag and drop a CSV file, or click to select'}
-            </p>
-            <p className="text-xs text-gray-500">CSV files only</p>
+          <div className="space-y-4">
+            <div className="flex justify-center">
+              <div className={`w-20 h-20 rounded-2xl flex items-center justify-center transition-all ${
+                isDragActive 
+                  ? 'bg-primary-500 scale-110' 
+                  : 'bg-gray-200'
+              }`}>
+                <span className="text-4xl">{isDragActive ? '📤' : '📁'}</span>
+              </div>
+            </div>
+            <div>
+              <p className="text-base font-semibold text-gray-700 mb-1">
+                {isDragActive
+                  ? 'Drop your CSV file here'
+                  : 'Drag and drop your CSV file'}
+              </p>
+              <p className="text-sm text-gray-500">
+                {isDragActive ? 'Release to upload' : 'or click to browse'}
+              </p>
+            </div>
+            <div className="pt-2">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-700">
+                CSV files only
+              </span>
+            </div>
           </div>
         )}
       </div>
       {error && (
-        <div className="mt-2 text-sm text-red-600 bg-red-50 p-2 rounded">
-          {error}
+        <div className="mt-4 p-4 bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-2 animate-fade-in">
+          <span className="text-xl">⚠️</span>
+          <span className="text-sm font-medium">{error}</span>
         </div>
       )}
     </div>

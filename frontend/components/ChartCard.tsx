@@ -15,7 +15,7 @@ interface ChartCardProps {
 
 export function ChartCard({ title, description, children }: ChartCardProps) {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-soft p-6 border border-gray-100 card-hover">
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
         {description && (

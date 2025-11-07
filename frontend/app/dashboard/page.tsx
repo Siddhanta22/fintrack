@@ -118,52 +118,71 @@ export default function DashboardPage() {
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <div className="flex gap-3">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 p-6 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent">
+              Dashboard
+            </h1>
+            <p className="text-gray-600 mt-1">Welcome back! Here's your financial overview.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={downloadCSVTemplate}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+              className="px-4 py-2.5 bg-white text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 shadow-sm hover:shadow-md border border-gray-200 text-sm font-medium flex items-center gap-2"
             >
-              📥 Download CSV Template
+              <span>📥</span> Template
             </button>
             <button
               onClick={() => setShowUpload(!showUpload)}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
+              className="px-4 py-2.5 gradient-primary text-white rounded-xl hover:shadow-lg transition-all duration-200 text-sm font-medium flex items-center gap-2 shadow-md"
             >
-              {showUpload ? '✕ Cancel' : '📤 Upload CSV'}
+              <span>{showUpload ? '✕' : '📤'}</span> {showUpload ? 'Cancel' : 'Upload CSV'}
             </button>
             <button
               onClick={() => router.push('/transactions')}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+              className="px-4 py-2.5 gradient-success text-white rounded-xl hover:shadow-lg transition-all duration-200 text-sm font-medium flex items-center gap-2 shadow-md"
             >
-              ➕ Add Transaction
+              <span>➕</span> Add Transaction
             </button>
           </div>
         </div>
 
         {/* CSV Upload Section */}
         {showUpload && (
-          <div className="bg-white rounded-lg shadow p-6 border-2 border-primary-200">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Upload Transactions from CSV</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Upload a CSV file with your transactions. The file should have columns: Date, Description, Amount.
-            </p>
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-soft p-6 border border-primary-100 animate-slide-up">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-md">
+                <span className="text-white text-xl">📤</span>
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Upload Transactions from CSV</h2>
+                <p className="text-sm text-gray-600">
+                  Upload a CSV file with columns: Date, Description, Amount
+                </p>
+              </div>
+            </div>
             <UploadBox
               onUpload={handleUpload}
               accountId={accountId}
               disabled={uploadMutation.isPending}
             />
             {uploadMutation.isSuccess && (
-              <div className="mt-4 p-4 bg-green-50 text-green-800 rounded">
-                ✅ Successfully uploaded {uploadMutation.data.transactions_created} transactions!
+              <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 text-green-800 rounded-xl border border-green-200 animate-fade-in">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">✅</span>
+                  <span className="font-medium">Successfully uploaded {uploadMutation.data.transactions_created} transactions!</span>
+                </div>
               </div>
             )}
             {uploadMutation.isError && (
-              <div className="mt-4 p-4 bg-red-50 text-red-800 rounded">
-                ❌ Error: {(uploadMutation.error as any)?.response?.data?.detail || 'Upload failed'}
+              <div className="mt-4 p-4 bg-gradient-to-r from-red-50 to-rose-50 text-red-800 rounded-xl border border-red-200 animate-fade-in">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">❌</span>
+                  <span>Error: {(uploadMutation.error as any)?.response?.data?.detail || 'Upload failed'}</span>
+                </div>
               </div>
             )}
           </div>
@@ -171,31 +190,50 @@ export default function DashboardPage() {
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500">Total Income</p>
-            <p className="text-2xl font-bold text-green-600 mt-2">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-soft p-6 border border-gray-100 card-hover group">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-gray-600">Total Income</p>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                <span className="text-white text-lg">💰</span>
+              </div>
+            </div>
+            <p className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
               ${parseFloat(insights?.total_income || '0').toLocaleString('en-US', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500">Total Expenses</p>
-            <p className="text-2xl font-bold text-red-600 mt-2">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-soft p-6 border border-gray-100 card-hover group">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-gray-600">Total Expenses</p>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                <span className="text-white text-lg">💸</span>
+              </div>
+            </div>
+            <p className="text-3xl font-bold bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">
               ${parseFloat(insights?.total_expenses || '0').toLocaleString('en-US', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500">Net Income</p>
-            <p
-              className={`text-2xl font-bold mt-2 ${
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-soft p-6 border border-gray-100 card-hover group">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-gray-600">Net Income</p>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform ${
                 parseFloat(insights?.net_income || '0') >= 0
-                  ? 'text-green-600'
-                  : 'text-red-600'
+                  ? 'bg-gradient-to-br from-green-400 to-emerald-500'
+                  : 'bg-gradient-to-br from-red-400 to-rose-500'
+              }`}>
+                <span className="text-white text-lg">{parseFloat(insights?.net_income || '0') >= 0 ? '📈' : '📉'}</span>
+              </div>
+            </div>
+            <p
+              className={`text-3xl font-bold bg-clip-text text-transparent ${
+                parseFloat(insights?.net_income || '0') >= 0
+                  ? 'bg-gradient-to-r from-green-600 to-emerald-600'
+                  : 'bg-gradient-to-r from-red-600 to-rose-600'
               }`}
             >
               ${parseFloat(insights?.net_income || '0').toLocaleString('en-US', {
@@ -275,20 +313,36 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent Transactions */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Transactions</h2>
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-soft p-6 border border-gray-100">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-md">
+              <span className="text-white text-lg">💳</span>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">Recent Transactions</h2>
+          </div>
           {transactions && transactions.length > 0 ? (
             <TransactionTable transactions={transactions} />
           ) : (
-            <p className="text-gray-500">No transactions found</p>
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                <span className="text-3xl">📝</span>
+              </div>
+              <p className="text-gray-500 font-medium">No transactions found</p>
+              <p className="text-sm text-gray-400 mt-1">Upload a CSV or add a transaction to get started</p>
+            </div>
           )}
         </div>
 
         {/* AI Summary */}
         {insights?.ai_summary && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">AI Insights</h2>
-            <p className="text-gray-700 leading-relaxed">{insights.ai_summary}</p>
+          <div className="bg-gradient-to-br from-primary-50 via-blue-50 to-indigo-50 rounded-2xl shadow-soft p-6 border border-primary-100">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-md">
+                <span className="text-white text-lg">🤖</span>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900">AI Insights</h2>
+            </div>
+            <p className="text-gray-700 leading-relaxed bg-white/60 rounded-xl p-4 backdrop-blur-sm">{insights.ai_summary}</p>
           </div>
         )}
       </div>

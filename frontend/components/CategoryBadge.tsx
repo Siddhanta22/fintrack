@@ -25,10 +25,15 @@ export function CategoryBadge({ category, onClick }: CategoryBadgeProps) {
     <span
       onClick={onClick}
       className={`
-        inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-        ${onClick ? 'cursor-pointer hover:opacity-80' : ''}
+        inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
+        transition-all duration-200
+        ${onClick ? 'cursor-pointer hover:scale-105 hover:shadow-md' : ''}
       `}
-      style={{ backgroundColor: `${category.color}20`, color: category.color }}
+      style={{ 
+        backgroundColor: `${category.color}15`, 
+        color: category.color,
+        border: `1px solid ${category.color}30`
+      }}
     >
       {category.name}
     </span>
