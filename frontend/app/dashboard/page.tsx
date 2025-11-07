@@ -15,14 +15,22 @@
  * - Shows loading and error states
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { insightsApi, transactionsApi } from '@/lib/api';
 import { ChartCard } from '@/components/ChartCard';
 import { TransactionTable } from '@/components/TransactionTable';
+import { UploadBox } from '@/components/UploadBox';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { format } from 'date-fns';
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [accountId] = useState<number>(1); // TODO: Get from user's accounts
+  const [showUpload, setShowUpload] = useState(false);
+
   // Get current month/year
   const now = new Date();
   const month = now.getMonth() + 1;
@@ -49,6 +57,31 @@ export default function DashboardPage() {
     queryFn: () => transactionsApi.list({ limit: 10 }),
     retry: false,
   });
+
+  // Upload mutation
+  const uploadMutation = useMutation({
+    mutationFn: (file: File) => transactionsApi.upload(file, accountId, true),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
+      setShowUpload(false);
+    },
+  });
+
+  const handleUpload = async (file: File) => {
+    await uploadMutation.mutateAsync(file);
+  };
+
+  const downloadCSVTemplate = () => {
+    const csvContent = "Date,Description,Amount\n2024-01-15,Example Transaction,-50.00\n2024-01-16,Salary Deposit,3000.00";
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'transaction_template.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
 
   // Check if user is not authenticated
   const isUnauthorized = 
@@ -87,7 +120,54 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <div className="flex gap-3">
+            <button
+              onClick={downloadCSVTemplate}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+            >
+              📥 Download CSV Template
+            </button>
+            <button
+              onClick={() => setShowUpload(!showUpload)}
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
+            >
+              {showUpload ? '✕ Cancel' : '📤 Upload CSV'}
+            </button>
+            <button
+              onClick={() => router.push('/transactions')}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+            >
+              ➕ Add Transaction
+            </button>
+          </div>
+        </div>
+
+        {/* CSV Upload Section */}
+        {showUpload && (
+          <div className="bg-white rounded-lg shadow p-6 border-2 border-primary-200">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Upload Transactions from CSV</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Upload a CSV file with your transactions. The file should have columns: Date, Description, Amount.
+            </p>
+            <UploadBox
+              onUpload={handleUpload}
+              accountId={accountId}
+              disabled={uploadMutation.isPending}
+            />
+            {uploadMutation.isSuccess && (
+              <div className="mt-4 p-4 bg-green-50 text-green-800 rounded">
+                ✅ Successfully uploaded {uploadMutation.data.transactions_created} transactions!
+              </div>
+            )}
+            {uploadMutation.isError && (
+              <div className="mt-4 p-4 bg-red-50 text-red-800 rounded">
+                ❌ Error: {(uploadMutation.error as any)?.response?.data?.detail || 'Upload failed'}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

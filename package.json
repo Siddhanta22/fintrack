@@ -1,0 +1,32 @@
+{
+  "name": "financetrack",
+  "version": "1.0.0",
+  "description": "AI-powered personal finance dashboard",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && python3 -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "build": "npm run build:frontend",
+    "build:frontend": "cd frontend && npm run build",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:frontend": "cd frontend && npm start",
+    "start:backend": "cd backend && python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000",
+    "install:all": "npm install && cd frontend && npm install",
+    "install:backend": "cd backend && pip install -r requirements.txt",
+    "install:frontend": "cd frontend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "finance",
+    "dashboard",
+    "nextjs",
+    "fastapi",
+    "ai"
+  ],
+  "author": "",
+  "license": "MIT"
+}
+
