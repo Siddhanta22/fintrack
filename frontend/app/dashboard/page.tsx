@@ -83,18 +83,7 @@ export default function DashboardPage() {
     window.URL.revokeObjectURL(url);
   };
 
-  // Check if user is not authenticated
-  const isUnauthorized = 
-    (insightsError as any)?.response?.status === 401 ||
-    (transactionsError as any)?.response?.status === 401;
-
-  if (isUnauthorized) {
-    // Redirect to login
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login';
-    }
-    return null;
-  }
+  // Open access mode - no authentication required
 
   if (insightsLoading || transactionsLoading) {
     return (

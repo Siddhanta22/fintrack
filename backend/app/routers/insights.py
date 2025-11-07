@@ -22,7 +22,7 @@ from decimal import Decimal
 from app.database import get_db
 from app.models import Transaction, Budget, Category, User
 from app.schemas import MonthlyInsightsResponse
-from app.auth import get_current_user
+from app.auth import get_default_user as get_current_user
 from app.services.ai_service import generate_monthly_summary
 
 router = APIRouter()

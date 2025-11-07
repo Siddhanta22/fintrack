@@ -16,8 +16,10 @@ export function Navbar() {
   const router = useRouter();
 
   const handleLogout = () => {
+    // Open access mode - just clear token if present
     localStorage.removeItem('access_token');
-    router.push('/login');
+    // Refresh page to use default user
+    window.location.reload();
   };
 
   return (

@@ -23,14 +23,15 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
-from app.models import User
+from app.models import User, Account
 
 # Password hashing context
 # bcrypt is slow by design (intentionally) to prevent brute force attacks
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # OAuth2 scheme: tells FastAPI where to look for tokens (Authorization header)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+# Made optional for open access mode - won't fail on requests without tokens
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -137,6 +138,46 @@ def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is inactive"
         )
+    
+    return user
+
+
+def get_default_user(db: Session = Depends(get_db)) -> User:
+    """
+    Get or create a default user for open access.
+    This allows the app to work without authentication.
+    Also ensures a default account exists for the user.
+    
+    Returns:
+        Default user (email: default@financetrack.local)
+    """
+    # Try to get default user by email
+    user = db.query(User).filter(User.email == "default@financetrack.local").first()
+    
+    if not user:
+        # Create default user if it doesn't exist
+        user = User(
+            email="default@financetrack.local",
+            hashed_password=get_password_hash("default"),  # Not used but required
+            full_name="Default User",
+            is_active=True
+        )
+        db.add(user)
+        db.flush()  # Flush to get the user ID without committing
+    
+    # Ensure default account exists for this user
+    account = db.query(Account).filter(Account.user_id == user.id, Account.name == "Default Account").first()
+    if not account:
+        account = Account(
+            user_id=user.id,
+            name="Default Account",
+            account_type="checking",
+            balance=0.00
+        )
+        db.add(account)
+    
+    db.commit()
+    db.refresh(user)
     
     return user
 

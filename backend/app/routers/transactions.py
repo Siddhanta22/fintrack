@@ -29,7 +29,7 @@ from app.schemas import (
     TransactionCreate, TransactionResponse, TransactionFilter,
     TransactionUploadResponse
 )
-from app.auth import get_current_user
+from app.auth import get_default_user as get_current_user
 from app.services.csv_parser import parse_csv_file
 from app.services.categorization import categorize_batch
 
@@ -72,16 +72,28 @@ async def upload_transactions(
         2024-01-15,STARBUCKS STORE #1234,-5.50
         2024-01-16,SALARY DEPOSIT,3000.00
     """
-    # Verify account belongs to user
+    # Get or create account for user
     account = db.query(Account).filter(
         and_(Account.id == account_id, Account.user_id == current_user.id)
     ).first()
     
+    # If specified account doesn't exist, get or create the first account for this user
     if not account:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Account not found"
-        )
+        account = db.query(Account).filter(Account.user_id == current_user.id).first()
+        if not account:
+            # Create default account if none exists
+            account = Account(
+                user_id=current_user.id,
+                name="Default Account",
+                account_type="checking",
+                balance=0.00
+            )
+            db.add(account)
+            db.commit()
+            db.refresh(account)
+    
+    # Use the account's ID (may be different from requested account_id)
+    actual_account_id = account.id
     
     # Validate file
     if not file.filename or not file.filename.lower().endswith('.csv'):
@@ -115,7 +127,7 @@ async def upload_transactions(
     
     # Parse CSV
     try:
-        parsed_transactions = parse_csv_file(content, account_id)
+        parsed_transactions = parse_csv_file(content, actual_account_id)
     except ValueError as e:
         # ValueError from CSV parser (missing columns, date format, etc.)
         raise HTTPException(
@@ -150,7 +162,7 @@ async def upload_transactions(
             # Check for duplicate (same date, amount, description for this account)
             existing = db.query(Transaction).filter(
                 and_(
-                    Transaction.account_id == account_id,
+                    Transaction.account_id == actual_account_id,
                     Transaction.date == trans_data["date"],
                     Transaction.amount == trans_data["amount"],
                     Transaction.description == trans_data["description"]
@@ -182,7 +194,7 @@ async def upload_transactions(
         new_transactions = db.query(Transaction).filter(
             and_(
                 Transaction.user_id == current_user.id,
-                Transaction.account_id == account_id,
+                Transaction.account_id == actual_account_id,
                 Transaction.is_categorized == False
             )
         ).order_by(Transaction.id.desc()).limit(created_count).all()

@@ -33,10 +33,10 @@ def get_llm() -> Optional[ChatOpenAI]:
         return None
     if _llm is None:
         _llm = ChatOpenAI(
-            model_name="gpt-3.5-turbo",
-            temperature=0.3,
-            openai_api_key=settings.OPENAI_API_KEY
-        )
+    model_name="gpt-3.5-turbo",
+    temperature=0.3,
+    openai_api_key=settings.OPENAI_API_KEY
+)
     return _llm
 
 

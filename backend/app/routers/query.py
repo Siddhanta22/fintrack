@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db, engine
 from app.models import User
 from app.schemas import NaturalLanguageQuery, QueryResponse
-from app.auth import get_current_user
+from app.auth import get_default_user as get_current_user
 from app.config import settings
 
 # Lazy import of LangChain - only import if needed

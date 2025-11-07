@@ -12,7 +12,7 @@ import { Navbar } from './Navbar';
 
 export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAuthPage = pathname === '/login' || pathname === '/register';
+  const isAuthPage = pathname === '/login';
   
   return (
     <>

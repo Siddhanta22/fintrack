@@ -19,61 +19,15 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
 from app.schemas import UserCreate, UserResponse, Token
-from app.auth import get_password_hash, verify_password, create_access_token, get_current_user
+from app.auth import get_password_hash, verify_password, create_access_token, get_default_user
 
 router = APIRouter()
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def register(user_data: UserCreate, db: Session = Depends(get_db)):
-    """
-    Register a new user.
-    
-    Process:
-    1. Check if email already exists
-    2. Hash the password (never store plain text!)
-    3. Create user record in database
-    4. Return user data (excluding password)
-    
-    Example request:
-        POST /api/auth/register
-        {
-            "email": "user@example.com",
-            "password": "securepassword123",
-            "full_name": "John Doe"
-        }
-    
-    Example response:
-        {
-            "id": 1,
-            "email": "user@example.com",
-            "full_name": "John Doe",
-            "created_at": "2024-01-15T10:30:00Z"
-        }
-    """
-    # Check if user already exists
-    existing_user = db.query(User).filter(User.email == user_data.email).first()
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
-        )
-    
-    # Hash password before storing
-    hashed_password = get_password_hash(user_data.password)
-    
-    # Create new user
-    new_user = User(
-        email=user_data.email,
-        hashed_password=hashed_password,
-        full_name=user_data.full_name
-    )
-    
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    
-    return new_user
+# Register route disabled for open access
+# @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+# def register(user_data: UserCreate, db: Session = Depends(get_db)):
+#     ... (disabled)
 
 
 @router.post("/login", response_model=Token)
@@ -129,22 +83,18 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 
 @router.get("/me", response_model=UserResponse)
-def get_me(current_user: User = Depends(get_current_user)):
+def get_me(current_user: User = Depends(get_default_user)):
     """
-    Get current authenticated user information.
-    
-    This is a protected route - requires valid JWT token in Authorization header.
+    Get current user information (default user for open access).
     
     Example request:
         GET /api/auth/me
-        Headers:
-            Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
     
     Example response:
         {
             "id": 1,
-            "email": "user@example.com",
-            "full_name": "John Doe",
+            "email": "default@financetrack.local",
+            "full_name": "Default User",
             "created_at": "2024-01-15T10:30:00Z"
         }
     """
